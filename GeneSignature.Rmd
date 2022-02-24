@@ -1,0 +1,442 @@
+---
+title: "DGH-GO: Clustering genes disrupted by rare CNVs in ASD patients"
+author: "Asif M. "
+output: 
+    html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Summary
+
+This document shows the utility of DGH-GO in studying the genetic heterogeneity of Autism Spectrum Disorder (ASD). 
+
+
+* Data set (genes)
+  + source: 
+  + Genes disrupted by rare CNVs in ASD patients were selected
+
+
+
+
+```{r lib, , echo=FALSE, include=FALSE}
+
+# calling libraries
+library(org.Hs.eg.db)
+library(GOSemSim)
+library(tidyr)
+library(doParallel)
+library(dplyr)
+library(plyr)
+library(shiny)
+library(shinythemes)
+library(sparkline)
+library(timevis)
+library(DT)
+library(shinycssloaders)
+library(fontawesome)
+library(shinydashboard)
+library(ggvenn)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(shinyWidgets)
+library(shinydashboard)
+library(org.Hs.eg.db)
+library(GOSemSim)
+library(tidyr)
+library(MASS)
+library(Rtsne)
+library(cluster)
+library(MASS)
+library(vegan)
+library(mclust)
+library(tidyr) 
+library(plyr)
+library(MASS)
+library(Rtsne)
+library(clValid)
+library("cluster")
+library("factoextra")
+library("magrittr")
+library(cluster)
+library(MASS)
+library(vegan)
+library(factoextra)
+library(fpc)
+library(tidyr)
+library(dplyr)
+library(plotly)
+library(shinyalert)
+library(plyr)
+
+
+
+
+```
+
+
+# Input genes
+
+```{r input, echo=FALSE}
+
+
+semantic_method= "Rel"
+semantic_combine="max"
+
+#creating GO object
+hsGO <- godata('org.Hs.eg.db', ont="BP", keytype = "SYMBOL")
+
+# dataIn<-read.csv("/home/asif/Desktop/CenturiWork/clustering/8Feb2022/ApplicationData/Diff_diseases_genes.csv", header = T, sep = ",")
+
+dataIn<-read.csv("/home/asif/Desktop/CenturiWork/clustering/8Feb2022/ApplicationData/RareCNVsDisruptedGenes.csv", header = T, sep = ",")
+
+dim(dataIn)
+head(dataIn)
+colnames(dataIn)[1] <- "genes"
+dataIn$class <- "ASD"
+# summarize the common genes
+# dataIn <- ddply(dataIn, .(genes), summarize, class=paste(unique(class), collapse = ","))
+# dim(dataIn)
+# 
+ length(unique(dataIn$genes))
+# 
+table(dataIn$class)
+
+```
+
+
+
+# Dimension Reduction
+
+## Pricipal Coordinate Analysis
+```{r cmdScale, echo=FALSE}
+
+# read the semantic similarty matrix
+# SemSim_mat <- read.csv("/home/asif/Desktop/CenturiWork/clustering/8Feb2022/ApplicationData/SemSim_Diff_diseases_genes.csv", header = TRUE, sep = ",")
+
+SemSim_mat <- read.csv("/home/asif/Desktop/CenturiWork/clustering/8Feb2022/ApplicationData/SemSim_RareCNVsDisruptedGenes.csv", header = TRUE, sep = ",")
+
+dim(SemSim_mat)
+SemSim_mat$class <- "ASD"
+#convert similarties to distances
+dist_mt <- as.dist(1 - SemSim_mat[, -which(names(SemSim_mat) %in% c("genes","class"))])
+
+dim_num <- 6
+dim1_pcoa <- 1
+dim2_pcoa <- 6
+pcooa<-cmdscale(dist_mt, k = dim_num)
+df_pcoa <-as.data.frame(pcooa)
+colnames(df_pcoa)<- 1:dim(df_pcoa)[2] 
+df_pcoa[['genes']] <- rownames(df_pcoa)
+df_pcoa[['class']] <- SemSim_mat$class 
+      
+#plotting selected dimensions
+plot_df <- df_pcoa[ , c(dim1_pcoa, dim2_pcoa, "class", "genes")]
+#
+x <- plot_df[,1]
+y <- plot_df[,2]
+disease <- plot_df[,3]
+
+p <- ggplot(data = plot_df, aes(x=x, y=y, color=disease)) + geom_point(show.legend = F) +
+        labs(x = as.character(paste("Dimension", dim1_pcoa, " ")),
+             y = as.character(paste("Dimension", dim2_pcoa, " ")))  + theme_classic()
+p2 <- ggplotly(p, hoverinfo =plot_df)# save it as plotly # let the user to select the dimensions
+p2
+
+
+# sh<- Shepard(dist_mt, pcooa)
+# x <- sh$x
+# y <- sh$y
+# 
+# plot_df2 <- data.frame("x"=x,"y"=y)
+# 
+# 
+# p = ggplot(data = plot_df2, aes(x, y)) + geom_point() +
+#           labs(x = "projected", y = "Observations",
+#                title = "Shepard Plot")
+# p = p + geom_smooth(method = "lm", se = FALSE) + theme_classic()
+# 
+# p
+
+
+```
+## T-SNE
+```{r tsne, echo=FALSE}
+
+dim_tsne_num <- 2
+dim1_tsne <- 1
+dim2_tsne <- 2
+tsne_mod <- Rtsne(as.matrix(dist_mt), dims = dim_tsne_num, perplexity=3, 
+                  verbose=FALSE, max_iter = 500, is_distance = TRUE)
+df_tsne <-as.data.frame(tsne_mod$Y )
+colnames(df_tsne)<- 1:dim(df_tsne)[2] 
+df_tsne[['genes']] <- SemSim_mat$genes
+df_tsne[['class']] <- SemSim_mat$class 
+   
+
+#plotting selected dimensions
+plot_df <- df_tsne[ , c(dim1_tsne, dim2_tsne, "class", "genes")]
+#
+x <- plot_df[,1]
+y <- plot_df[,2]
+disease <- plot_df[,3]
+
+p <- ggplot(data = plot_df, aes(x=x, y=y, color=disease)) + geom_point(show.legend = F) +
+        labs(x = as.character(paste("Dimension", dim1_tsne, " ")),
+             y = as.character(paste("Dimension", dim2_tsne, " ")))  + theme_classic()
+p <- ggplotly(p, hoverinfo =plot_df)# save it as plotly # let the user to select the dimensions
+p
+
+
+    # #########################################
+    # # shepard plot
+    #   sh<- Shepard(dist_mt, tsne_mod$Y)
+    #   x <- sh$x
+    #   y <- sh$y
+    #   
+    #   plot_df2 <- data.frame("x"=x,"y"=y)
+    #   
+    #   p = ggplot(data = plot_df2, aes(x, y)) + geom_point() +
+    #     labs(x = "projected", y = "Observations",
+    #          title = "Shepard Plot")
+    #   p = p + geom_smooth(method = "lm", se = FALSE) + theme_classic()
+    #   
+    #   pp = ggplotly(p)
+    #   
+    #   pp
+    #   
+```
+
+# Clustering
+
+## Agglomerative hierarchical clustering
+```{r ahc_clus, echo=FALSE}
+
+df_hca_in <-SemSim_mat
+
+method_opt_clus <- "silhouette"
+
+#distance matrxi for clustering
+dist_hca <- as.dist(1-df_hca_in[, -which(names(df_hca_in) %in% c("genes","class"))])
+hca_opt_p <- fviz_nbclust(df_hca_in[, -which(names(df_hca_in) %in% c("genes","class"))], 
+              hcut, method = method_opt_clus ,
+                                    diss =dist_hca, k.max=5 )
+hca_opt_p <- ggplotly(hca_opt_p)
+hca_opt_p
+
+linkage_hca <- "ward"
+hca_centers <- 2
+res_hca_clus <- agnes(df_hca_in[, -which(names(df_hca_in) %in% c("genes","class"))], 
+                              method = linkage_hca, stand = TRUE)
+clus <- cutree(res_hca_clus, k = hca_centers)
+          
+df_hca_in$cluster <-(unname(clus)) 
+
+
+hca_stat<-cluster.stats(d = dist_hca,  df_hca_in$cluster, alt.clustering = NULL,
+                                      noisecluster=FALSE, silhouette = TRUE, G2 = FALSE, 
+                                      G3 = FALSE, wgap=TRUE, sepindex=TRUE, 
+                                      sepprob=0.1, sepwithnoise=TRUE, compareonly = FALSE, aggregateonly = FALSE)
+            
+hca_table<-c()
+hca_table<-rbind(hca_table,hca_stat$cluster.size, hca_stat$diameter,
+                               (hca_stat$average.distance), 
+                             hca_stat$median.distance,hca_stat$separation, hca_stat$clus.avg.silwidths
+                               , hca_stat$average.between, hca_stat$average.within
+                               ,hca_stat$max.diameter, hca_stat$min.separation, hca_stat$avg.silwidth
+                               , hca_stat$dunn, hca_stat$dunn2)
+            
+            
+row.names(hca_table)<-c("Cluster size", "Diameter",  "Average distance", 
+                                      "Median distance","Separation", "Clus avg. silwidths"
+                                      , "Average between","Average within"
+                                      ,"Max diameter","Min separation", "Avg. silwidth","Dunn","Dunn2"
+            )
+colnames(hca_table)<-c(paste("cluster",1:hca_centers,  sep = "."))
+            
+hca_table<-round(hca_table,3)
+
+# print table
+
+
+exportOptions = list(
+      select = TRUE,
+      searching = TRUE, 
+      scrollX = TRUE,
+      scrollY = TRUE,
+      dom = "BRSpfrti",
+      buttons = list(
+        list(
+          extend = "copy",
+          text = 'Copy the selected',
+          exportOptions = list(modifier = list(selected = TRUE, order    = 'index', page     = 'all', search='none' ))
+        ), 
+        list(
+          extend = "csv",
+          text = 'Exported selected to CSV',
+          exportOptions = list(modifier = list(selected = TRUE, order    = 'index', page     = 'all', search='none'))
+        ),
+        list(
+          extend = "csv",
+          text = 'Exported all to CSV',
+          exportOptions = list(modifier = list(selected = FALSE, order    = 'index', page     = 'all', search='none'))
+        )
+          
+      )
+    )
+
+
+# show datatable with exporting options
+datatable(
+  hca_table,
+  caption = "Clustering statistics",
+  rownames = TRUE,
+  filter = 'top',
+  extensions = c("Buttons", "Select"),
+  options = exportOptions
+    
+)
+
+
+            
+hca_sil <- silhouette(df_hca_in$cluster, dist_hca)
+
+fviz_silhouette(hca_sil)
+
+
+
+dd <- fviz_cluster(list(data = df_hca_in[, -which(names(df_hca_in) %in% c("genes","class", "cluster"))],
+
+                                cluster = df_hca_in$cluster),
+
+                              alpha = 0.9, shape = 19, geom = c("point"), ellipse = FALSE 
+                               ) 
+
+
+hca_plot <- ggplotly(dd)
+          
+          
+          
+hca_plot  
+
+g_c_clus <- df_hca_in[, c("genes", "class", "cluster")]
+
+cluster3 <- g_c_clus[g_c_clus$cluster==1, ]
+dim(cluster3)
+head(cluster3)
+table(cluster3$class)
+
+#write.csv(cluster3$genes, "test.csv")
+
+
+
+```
+
+
+# Functional enrichment analysis
+```{r fea, echo=FALSE}
+library(gprofiler2)
+query_fea_1 <- cluster3$genes
+
+query_fea <- query_fea_1#list(query_fea_1, query_fea_2)
+name_species <- "hsapiens"
+exclude_IEA <- TRUE
+coorrect_pvalue <- "false_discovery_rate"# c("g_SCS", "bonferroni", "fdr", "false_discovery_rate", "gSCS","analytical")
+domain_scope <- "annotated"
+db_search <- c("GO", "KEGG", "HP")
+
+fea_res <- gost(query = query_fea,
+                organism = name_species,
+                ordered_query = FALSE,
+                multi_query = FALSE,
+                significant = TRUE,
+                exclude_iea = exclude_IEA,
+                measure_underrepresentation = FALSE,
+                evcodes = TRUE,
+                user_threshold = 0.05,
+                correction_method = coorrect_pvalue,
+                domain_scope = domain_scope, #c("annotated", "known", "custom", "custom_annotated"),
+                custom_bg = NULL,
+                numeric_ns = "",
+                sources = db_search,
+                as_short_link = FALSE
+            )
+
+gostplot(fea_res, interactive = TRUE)
+
+# modify the g:Profiler data frame
+gp_mod = fea_res$result[ c("query", "source", "term_id",
+                           "term_name", "p_value", "query_size", 
+                                "intersection_size", "term_size", 
+                                "effective_domain_size", "intersection")]
+
+
+gp_mod$GeneRatio = paste0(gp_mod$intersection_size, "/", gp_mod$query_size)
+gp_mod$BgRatio = paste0(gp_mod$term_size, "/", gp_mod$effective_domain_size)
+
+names(gp_mod) = c("Cluster", "Category", "ID", "Description", "p.adjust",
+ "query_size", "Count", "term_size", "effective_domain_size",
+ "geneID", "GeneRatio", "BgRatio")
+
+print("\n")
+
+```
+
+
+
+## Enriched Human Phenotype Ontology terms
+```{r feaHPO, echo=FALSE}
+datatable(
+  gp_mod[gp_mod$Category== "HP",],
+  caption = "Enriched Human Phenotype Ontology terms",
+  rownames = TRUE,
+  filter = 'top',
+  extensions = c("Buttons", "Select"),
+  options = exportOptions
+    
+)
+```
+
+
+
+## Enriched GO terms
+```{r feaGO, echo=FALSE}
+# show datatable with exporting options
+datatable(
+  gp_mod[gp_mod$Category== "GO",],
+  caption = "Enriched GO terms",
+  rownames = TRUE,
+  filter = 'top',
+  extensions = c("Buttons", "Select"),
+  options = exportOptions
+    
+)
+
+    
+
+```
+
+
+
+## Enriched KEGG Pathways
+```{r feaKegg, echo=FALSE}
+# show datatable with exporting options
+datatable(
+  gp_mod[gp_mod$Category== "KEGG",],
+  caption = "Enriched KEGG Pathways",
+  rownames = TRUE,
+  filter = 'top',
+  extensions = c("Buttons", "Select"),
+  options = exportOptions
+    
+)
+    
+
+```
