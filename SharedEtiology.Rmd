@@ -1,5 +1,5 @@
 ---
-title: "DGH-GO: Clustering genes disrupted by rare CNVs in ASD patients"
+title: "DGH-GO: Clustering genes to explore the shared etiolgy of complex diseases"
 author: "Asif M. "
 output: 
     html_document:
@@ -25,10 +25,9 @@ This document shows the utility of DGH-GO in exploring or studying the shared et
 
 
 
-# Input genes
 
 
-```{r SemSim}
+```{r SemSim, echo=FALSE, include=FALSE}
 
 # calling libraries
 library(org.Hs.eg.db)
@@ -80,6 +79,13 @@ library(shinyalert)
 library(plyr)
 
 
+
+
+```
+
+# Input genes
+
+```{r inputt, echo=FALSE}
 semantic_method= "Rel"
 semantic_combine="max"
 
@@ -94,17 +100,15 @@ head(dataIn)
 # dataIn <- ddply(dataIn, .(genes), summarize, class=paste(unique(class), collapse = ","))
 # dim(dataIn)
 # 
- length(unique(dataIn$genes))
+length(unique(dataIn$genes))
 # 
 table(dataIn$class)
-
 
 ```
 
 ## Exploratory plots of input
 
-
-```{r ShowPlots, echo=FALSE}
+```{r ShowPlots2, echo=FALSE}
  # bar pot
 bar_data <- as.data.frame(table(dataIn$class))
 colnames(bar_data) <- c("Diseases", "genes")
@@ -130,8 +134,11 @@ ggvenn(x, set_name_size = 3)
 
   
 ```
+
 # Dimension Reduction
+
 ## Pricipal Coordinate Analysis
+
 ```{r cmdScale, echo=FALSE}
 
 # read the semantic similarty matrix
@@ -226,6 +233,7 @@ p
     #   pp
     #   
 ```
+
 # Clustering
 
 ## Agglomerative hierarchical clustering
@@ -353,7 +361,7 @@ library(gprofiler2)
 
 
 # Functional enrichment analysis
-```{r kmean_clus, echo=FALSE}
+```{r fea, echo=FALSE}
 query_fea_1 <- cluster3$genes
 
 query_fea <- query_fea_1#list(query_fea_1, query_fea_2)
@@ -383,7 +391,6 @@ fea_res <- gost(query = query_fea,
 
 
 gostplot(fea_res, interactive = TRUE)
-print(head(fea_res$result))
 
 
 # modify the g:Profiler data frame
@@ -393,19 +400,23 @@ gp_mod = fea_res$result[ c("query", "source", "term_id",
                                 "effective_domain_size", "intersection")]
 
 
-head(gp_mod)
 
 gp_mod$GeneRatio = paste0(gp_mod$intersection_size, "/", gp_mod$query_size)
 
 gp_mod$BgRatio = paste0(gp_mod$term_size, "/", gp_mod$effective_domain_size)
 
-#names(gp_mod)
 names(gp_mod) = c("Cluster", "Category", "ID", "Description", "p.adjust",
  "query_size", "Count", "term_size", "effective_domain_size",
  "geneID", "GeneRatio", "BgRatio")
 
 
-# show datatable with exporting options
+
+```
+
+
+
+## Enriched Human Phenotype Ontology terms
+```{r feaHPO, echo=FALSE}
 datatable(
   gp_mod[gp_mod$Category== "HP",],
   caption = "Enriched Human Phenotype Ontology terms",
@@ -415,9 +426,12 @@ datatable(
   options = exportOptions
     
 )
+```
 
-print("\n")
 
+
+## Enriched GO terms
+```{r feaGO, echo=FALSE}
 # show datatable with exporting options
 datatable(
   gp_mod[gp_mod$Category== "GO",],
@@ -429,8 +443,14 @@ datatable(
     
 )
 
-print("\n")
+    
 
+```
+
+
+
+## Enriched KEGG Pathways
+```{r feaKegg, echo=FALSE}
 # show datatable with exporting options
 datatable(
   gp_mod[gp_mod$Category== "KEGG",],
@@ -441,7 +461,7 @@ datatable(
   options = exportOptions
     
 )
-
+    
 
 ```
 
