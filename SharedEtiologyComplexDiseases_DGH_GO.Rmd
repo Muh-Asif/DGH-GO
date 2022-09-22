@@ -1,0 +1,274 @@
+---
+title: "DGH-GO: Clustering genes to explore the shared etiolgy of complex diseases"
+author: "Asif M. "
+output: 
+    html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Summary
+
+To show another application of DGH-GO in dissecting the shared etiology of complex disorders, genes known for ASD, Developmental Disorders (DD), Intellectual Disability (ID), and Epileptic Encephalopathy (EE) were obtained from Zhang et al.
+
+* Data set
+  + source: Zhang Y, Wang R, Liu Z, Jiang S, Du L, Qiu K, et al. Distinct genetic patterns of shared and unique genes across four neurodevelopmental disorders. Am J Med Genet Part B Neuropsychiatr Genet. 2021
+
+
+```{r SemSim, echo=FALSE, include=FALSE}
+
+library(shiny)
+library(shinythemes)
+library(sparkline)
+library(timevis)
+library(DT)
+library(shinycssloaders)
+library(fontawesome)
+library(shinydashboard)
+library(ggvenn)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(shinyWidgets)
+library(org.Hs.eg.db)
+library(GOSemSim)
+library(tidyr)
+library(MASS)
+library(Rtsne)
+library(cluster)
+library(vegan)
+library(mclust)
+library(plyr)
+library(clValid)
+library("magrittr")
+library(factoextra)
+library(fpc)
+library(dplyr)
+library(shinyalert)
+library(umap)
+
+```
+
+# Input genes
+* Semantci similarty measure: REL
+* Combining criterion: MAX
+
+```{r inputt, echo=FALSE}
+semantic_method= "Rel"
+semantic_combine="max"
+
+#creating GO object
+hsGO <- godata('org.Hs.eg.db', keytype = "SYMBOL", ont="BP", computeIC=TRUE)
+
+dataIn<-read.csv("/home/asif/Desktop/CenturiWork/clustering/8Feb2022/ApplicationData/sharedEtiologyExample_input_code.csv", header = T, sep = ",")
+
+names(dataIn)[1] <- "genes"
+table(dataIn$class)
+semSimMat <-as.data.frame(mgeneSim(unique(dataIn$genes),
+                                       semData=hsGO,
+                                       measure=semantic_method,
+                                       combine=semantic_combine,
+                                       verbose=TRUE))
+
+semSimMat[1:6, 1:6]
+semSimMat$genes <- rownames(semSimMat)
+
+semSimMat_withClass <- merge(semSimMat, dataIn, by="genes", all.x=TRUE, all.y=FALSE, sort=FALSE)
+# write.csv(semSimMat_withClass, "/home/asif/Desktop/CenturiWork/clustering/8Feb2022/ApplicationData/sharedEtiologySemSimMatrxi_denvo.csv")
+
+```
+
+## Exploratory plots of input
+
+```{r ShowPlots2, echo=FALSE}
+ # bar pot
+bar_data <- as.data.frame(table(dataIn$class))
+colnames(bar_data) <- c("Diseases", "genes")
+p <- ggplot( data = bar_data, aes_string( x = colnames(bar_data)[1], 
+           y = colnames(bar_data)[2], fill=bar_data[,1]))+ geom_bar(stat="identity")+
+  ggtitle("Number of genes per disease set") +
+  xlab("Diseases") + ylab("Number of genes") +        coord_flip()
+
+p <-ggplotly(p)
+
+p  
+  
+#venn diagram
+x<-list()
+
+for(i in unique(dataIn$class)){
+           set1<- dataIn[dataIn$class== i,][1]
+           names(set1) <- i 
+           x <- append(x, set1)
+       }
+  
+ggvenn(x, set_name_size = 3)
+
+  
+```
+
+# Dimension Reduction (PCA) and Clustering
+
+```{r ahc_clus, echo=FALSE}
+
+# read the semantic similarty matrix
+SemSim_mat <-read.csv("E:/Asif_centuri_backups/CenturiWork/clustering/8Feb2022/ApplicationData/sharedEtiologySemSimMatrxi_denvo.csv")
+
+SemSim_mat <- SemSim_mat [-1]
+rownames(SemSim_mat) <- SemSim_mat$genes
+
+### PCA
+res_pca <- prcomp(SemSim_mat[, -which(names(SemSim_mat) %in% c("genes", "class"))], scale = TRUE, rank=50)
+fviz_eig(res_pca, ncp = 50)
+
+
+df_hca_in_pcs <- res_pca$x
+df_hca_in <-as.data.frame(df_hca_in_pcs[, 1:6]) # 
+df_hca_in$genes <- SemSim_mat$genes
+df_hca_in$class <- SemSim_mat$class
+
+#df_hca_in <- SemSim_mat
+dist_hca <- dist(df_hca_in[, -which(names(df_hca_in) %in% c("genes", "class"))])
+
+method_opt_clus <- "silhouette"
+
+#distance matrxi for clustering
+hca_opt_p <- fviz_nbclust(df_hca_in[, -which(names(df_hca_in) %in% c("genes", "class"))], 
+              hcut, method = method_opt_clus ,
+                                    diss =dist_hca, k.max=50 )
+hca_opt_p <- ggplotly(hca_opt_p)
+hca_opt_p
+
+linkage_hca <- "ward"
+hca_centers <- 22
+res_hca_clus <- agnes(df_hca_in[, -which(names(df_hca_in) %in% c("genes", "class"))], method = linkage_hca)
+
+clus <- cutree(res_hca_clus, k = hca_centers)
+          
+df_hca_in$cluster <-(unname(clus)) 
+
+dim(df_hca_in)
+
+hca_stat<-cluster.stats(d = dist_hca,  df_hca_in$cluster, alt.clustering = NULL,
+                                      noisecluster=FALSE, silhouette = TRUE, G2 = FALSE, 
+                                      G3 = FALSE, wgap=TRUE, sepindex=TRUE, 
+                                      sepprob=0.1, sepwithnoise=TRUE, compareonly = FALSE, aggregateonly = FALSE)
+            
+hca_table<-c()
+hca_table<-rbind(hca_table,hca_stat$cluster.size, hca_stat$diameter,
+                               (hca_stat$average.distance), 
+                             hca_stat$median.distance,hca_stat$separation, hca_stat$clus.avg.silwidths
+                               , hca_stat$average.between, hca_stat$average.within
+                               ,hca_stat$max.diameter, hca_stat$min.separation, hca_stat$avg.silwidth
+                               , hca_stat$dunn, hca_stat$dunn2)
+            
+            
+row.names(hca_table)<-c("Cluster size", "Diameter",  "Average distance", 
+                                      "Median distance","Separation", "Clus avg. silwidths"
+                                      , "Average between","Average within"
+                                      ,"Max diameter","Min separation", "Avg. silwidth","Dunn","Dunn2"
+            )
+colnames(hca_table)<-c(paste("cluster",1:hca_centers,  sep = "."))
+            
+hca_table<-round(hca_table,3)
+# print table
+# write.csv(hca_table, "E:/Asif_centuri_backups/CenturiWork/clustering/manuscript/SharedEtilogy_clusteringStatisticsWith22Clusters.CSV")
+
+exportOptions = list(
+      select = TRUE,
+      searching = TRUE, 
+      scrollX = TRUE,
+      scrollY = TRUE,
+      dom = "BRSpfrti",
+      buttons = list(
+        list(
+          extend = "copy",
+          text = 'Copy the selected',
+          exportOptions = list(modifier = list(selected = TRUE, order    = 'index', page     = 'all', search='none' ))
+        ), 
+        list(
+          extend = "csv",
+          text = 'Exported selected to CSV',
+          exportOptions = list(modifier = list(selected = TRUE, order    = 'index', page     = 'all', search='none'))
+        ),
+        list(
+          extend = "csv",
+          text = 'Exported all to CSV',
+          exportOptions = list(modifier = list(selected = FALSE, order    = 'index', page     = 'all', search='none'))
+        )
+          
+      )
+    )
+
+
+# show datatable with exporting options
+datatable(
+  hca_table,
+  caption = "Clustering statistics",
+  rownames = TRUE,
+  filter = 'top',
+  extensions = c("Buttons", "Select"),
+  options = exportOptions
+    
+)
+
+
+            
+hca_sil <- silhouette(df_hca_in$cluster, dist_hca)
+
+fviz_silhouette(hca_sil)
+
+
+plot_df <- df_hca_in[df_hca_in$cluster %in% c(1,2,6,7,8,9,12,13,14,18, 19,20,21,22), ] #18,
+
+dd <- fviz_cluster(list(data = plot_df[, -which(names(plot_df) %in% c("genes","class", "cluster"))],
+
+                                cluster = plot_df$cluster),
+
+                              alpha = 0.9, shape = 19, geom = c("point"), ellipse = FALSE 
+                               ) 
+
+
+hca_plot <- ggplotly(dd)
+          
+          
+          
+hca_plot  
+############################## UMAP
+
+library(umap)
+
+
+umap <- umap(plot_df[, -c(7,8,9)],  n_components =2)
+
+df <- data.frame(x = umap$layout[,1],
+                 y = umap$layout[,2],
+                # z= umap$layout[,3],
+                 cluster     = plot_df[, 9])
+
+
+p <- plot_ly(x=df$x, y=df$y, type="scatter", mode="markers", color=as.factor(df$cluster), size=30 )
+
+p <- ggplot(df, aes(x=x, y=y, colour =as.factor(cluster)     )) +
+  geom_point(size=4)
+
+##################################################
+
+g_c_clus <- df_hca_in[, c("genes", "class", "cluster")]
+
+# write.csv(g_c_clus, "E:/Asif_centuri_backups/CenturiWork/clustering/manuscript/SahredEtiology_gens_with_clusters_before_sil_PCAUpdated22Clusters.CSV")
+
+for(i in unique(g_c_clus$cluster)){
+  print(i)
+  newDf <- g_c_clus[g_c_clus$cluster==i, ]
+  print(table(newDf$class))
+}
+
+
+```

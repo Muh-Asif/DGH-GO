@@ -1,0 +1,300 @@
+---
+title: "DGH-GO: Clustering genes disrupted by rare CNVs in ASD patients"
+author: "Asif M. "
+output: 
+    github_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Summary
+
+This document shows the utility of DGH-GO in studying the genetic heterogeneity of Autism Spectrum Disorder (ASD). 
+
+
+* Data set (genes)
+  + Rare CNVs disrupting genes in 3802 individuals diagnosed with ASD were collected from Sanders et al. (Sanders SJ, Ercan-Sencicek AG, Hus V, Luo R, Murtha MT, Moreno-De-Luca D, et al. Multiple Recurrent De Novo CNVs, Including Duplications of the 7q11.23 Williams Syndrome Region, Are Strongly Associated with Autism. Neuron. 2011) 
+
+```{r lib, echo=FALSE, include=FALSE}
+
+library(shiny)
+library(shinythemes)
+library(sparkline)
+library(timevis)
+library(DT)
+library(shinycssloaders)
+library(fontawesome)
+library(shinydashboard)
+library(ggvenn)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(shinyWidgets)
+library(org.Hs.eg.db)
+library(GOSemSim)
+library(tidyr)
+library(MASS)
+library(Rtsne)
+library(cluster)
+library(vegan)
+library(mclust)
+library(plyr)
+library(clValid)
+library("magrittr")
+library(factoextra)
+library(fpc)
+library(dplyr)
+library(shinyalert)
+library(umap)
+
+
+
+```
+
+
+# Agglomerative hierarchical clustering (AHC)
+
+* AHC clustering was applied to genes semantic similarity matrix
+* Rel semantic similarity measure with max combining criterion was employed to input genes
+* Biological processes of gene ontology was used to compute similarty scores
+
+```{r ahc_clus, echo=FALSE}
+
+SemSim_mat <- read.csv("E:/Asif_centuri_backups/CenturiWork/clustering/8Feb2022/ApplicationData/SemSim_RareCNVsDisruptedGenes.csv", header = TRUE, sep = ",")
+
+
+df_hca_in <-SemSim_mat
+
+method_opt_clus <- "silhouette"
+
+#distance matrxi for clustering
+rownames(df_hca_in) <- df_hca_in$genes
+df_hca_in <- df_hca_in[, -which(names(df_hca_in) %in% c("genes"))]
+
+### PCA
+res_pca <- prcomp(df_hca_in, scale = TRUE, rank=50)
+fviz_eig(res_pca, ncp = 50)
+
+df_hca_in_pcs <- res_pca$x
+
+df_hca_in <-as.data.frame(df_hca_in_pcs[, 1:9]) 
+
+dist_hca <- dist(df_hca_in)
+
+hca_opt_p <- fviz_nbclust(df_hca_in, 
+              hcut, method = method_opt_clus ,
+                                    diss =dist_hca, k.max=50)
+
+hca_opt_p <- ggplotly(hca_opt_p)
+hca_opt_p
+
+clusters_sil <- hca_opt_p$data
+
+
+linkage_hca <- "ward"
+hca_centers <- 16
+res_hca_clus <- agnes(df_hca_in, method = linkage_hca)
+
+class(df_hca_in)
+
+clus <- cutree(res_hca_clus, k = hca_centers)
+          
+df_hca_in$cluster <-clus 
+
+hca_stat<-cluster.stats(d = dist_hca,  df_hca_in$cluster, alt.clustering = NULL,
+                                      noisecluster=FALSE, silhouette = TRUE, G2 = FALSE, 
+                                      G3 = FALSE, wgap=TRUE, sepindex=TRUE, 
+                                      sepprob=0.1, sepwithnoise=TRUE, compareonly = FALSE, aggregateonly = FALSE)
+            
+
+hca_table<-c()
+hca_table<-rbind(hca_table,hca_stat$cluster.size, hca_stat$diameter,
+                               (hca_stat$average.distance), 
+                             hca_stat$median.distance,hca_stat$separation, hca_stat$clus.avg.silwidths
+                               , hca_stat$average.between, hca_stat$average.within
+                               ,hca_stat$max.diameter, hca_stat$min.separation, hca_stat$avg.silwidth
+                               , hca_stat$dunn, hca_stat$dunn2)
+            
+            
+row.names(hca_table)<-c("Cluster size", "Diameter",  "Average distance", 
+                                      "Median distance","Separation", "Clus avg. silwidths"
+                                      , "Average between","Average within"
+                                      ,"Max diameter","Min separation", "Avg. silwidth","Dunn","Dunn2"
+            )
+colnames(hca_table)<-c(paste("cluster",1:hca_centers,  sep = "."))
+            
+hca_table<-round(hca_table,3)
+
+# print table
+
+
+exportOptions = list(
+      select = TRUE,
+      searching = TRUE, 
+      scrollX = TRUE,
+      scrollY = TRUE,
+      dom = "BRSpfrti",
+      buttons = list(
+        list(
+          extend = "copy",
+          text = 'Copy the selected',
+          exportOptions = list(modifier = list(selected = TRUE, order    = 'index', page     = 'all', search='none' ))
+        ), 
+        list(
+          extend = "csv",
+          text = 'Exported selected to CSV',
+          exportOptions = list(modifier = list(selected = TRUE, order    = 'index', page     = 'all', search='none'))
+        ),
+        list(
+          extend = "csv",
+          text = 'Exported all to CSV',
+          exportOptions = list(modifier = list(selected = FALSE, order    = 'index', page     = 'all', search='none'))
+        )
+          
+      )
+    )
+
+
+# show datatable with exporting options
+datatable(
+  hca_table,
+  caption = "Clustering statistics",
+  rownames = TRUE,
+  filter = 'top',
+  extensions = c("Buttons", "Select"),
+  options = exportOptions
+    
+)
+
+
+hca_sil <- silhouette(df_hca_in$cluster, dist_hca)
+head(df_hca_in)
+
+fviz_silhouette(hca_sil)
+
+
+
+dd <- fviz_cluster(list(data = df_hca_in[, -which(names(df_hca_in) %in% c("genes","class", "cluster"))],
+
+                                cluster = df_hca_in$cluster),
+
+                              alpha = 0.9, shape = 19, geom = c("point"), ellipse = FALSE 
+                               ) 
+
+
+hca_plot <- ggplotly(dd)
+          
+          
+          
+hca_plot  
+
+
+
+
+g_c_clus <- df_hca_in[, c("cluster")]#"class", "genes",
+
+
+
+```
+
+# Clustering after Sil
+```{r SilClus, echo=FALSE}
+
+#<= 0 =2; <=0.1=2; 
+neg_sil_index <- which(hca_sil[, 'sil_width'] <= 0)
+
+Sil_removed<-df_hca_in[-neg_sil_index,]
+dim(Sil_removed)
+dim(Sil_removed)
+Sil_removed[1:6, 1:10]
+  
+method_opt_clus <- "silhouette"
+
+#distance matrxi for clustering
+sub_Sil_rem <- Sil_removed[, -which(names(Sil_removed) %in% c("cluster"))] #"genes","class", 
+dist_hca <- dist(sub_Sil_rem, method = "euclidean")
+
+
+hca_opt_p <- fviz_nbclust(sub_Sil_rem, #"genes","class",  
+              hcut, method = method_opt_clus ,
+                                    diss =dist_hca, k.max=50)
+hca_opt_p <- ggplotly(hca_opt_p)
+hca_opt_p
+
+linkage_hca <- "ward"
+hca_centers <- 14
+
+res_hca_clus <- agnes(sub_Sil_rem, method = linkage_hca)
+
+clus <- cutree(res_hca_clus, k = hca_centers)
+          
+Sil_removed$cluster <-(unname(clus)) 
+dim(Sil_removed)
+
+hca_stat<-cluster.stats(d = dist_hca,  Sil_removed$cluster, alt.clustering = NULL,
+                                      noisecluster=FALSE, silhouette = TRUE, G2 = FALSE, 
+                                      G3 = FALSE, wgap=TRUE, sepindex=TRUE, 
+                                      sepprob=0.1, sepwithnoise=TRUE, compareonly = FALSE, aggregateonly = FALSE)
+            
+hca_table<-c()
+hca_table<-rbind(hca_table,hca_stat$cluster.size, hca_stat$diameter,
+                               (hca_stat$average.distance), 
+                             hca_stat$median.distance,hca_stat$separation, hca_stat$clus.avg.silwidths
+                               , hca_stat$average.between, hca_stat$average.within
+                               ,hca_stat$max.diameter, hca_stat$min.separation, hca_stat$avg.silwidth
+                               , hca_stat$dunn, hca_stat$dunn2)
+            
+            
+row.names(hca_table)<-c("Cluster size", "Diameter",  "Average distance", 
+                                      "Median distance","Separation", "Clus avg. silwidths"
+                                      , "Average between","Average within"
+                                      ,"Max diameter","Min separation", "Avg. silwidth","Dunn","Dunn2"
+            )
+colnames(hca_table)<-c(paste("cluster",1:hca_centers,  sep = "."))
+            
+hca_table<-round(hca_table,3)
+
+hca_table
+
+
+
+
+
+
+Sil_removed$genes <- rownames(Sil_removed)
+g_c_clus_sil <- Sil_removed[, c("genes", "cluster")]
+
+
+#install.packages("umap")
+library(umap)
+
+umap <- umap(Sil_removed[, -c(10,11)],  n_components =4)
+
+
+df <- data.frame(x = umap$layout[,1],
+                 y = umap$layout[,2],
+                 z= umap$layout[,3],
+                 cluster     = Sil_removed[, 10])
+
+table(df$cluster)
+df2 <- df[df$cluster %in% c(3,4,8,10,11),]
+
+
+p <- plot_ly(x=df2$x, y=df2$y, z=df2$z, type="scatter", mode="markers", color=as.factor(df2$cluster), size=20 )
+
+p <- ggplot(df2, aes(x=x, y=y, colour =as.factor(cluster)     )) +
+  geom_point()
+
+p
+###########################
+
+
+
+```
+
