@@ -127,7 +127,7 @@ ui <-dashboardPage(
                  
                  
         ), #import tabpanle
-        tabPanel(div(fa("syringe", fill = "#158cba"), "Semantic similarty matrix"),
+        tabPanel(div(fa("syringe", fill = "#158cba"), "Functional Similarities (FunSim) Module"),
                  
                  fluidRow(
 
@@ -164,7 +164,7 @@ ui <-dashboardPage(
                fluidRow(
                  column(width=12,
                        # conditionalPanel(condition = "input.ssRun",
-                                         box(title = "Genes semnatic similarty matrix", 
+                                         box(title = "Genes similarty matrix", 
                                              height = NULL, width = NULL, solidHeader = TRUE, status = "primary",
                                              collapsible = T, collapsed = TRUE,
                                              
@@ -179,7 +179,7 @@ ui <-dashboardPage(
 
         ), # SSM tab
         tabPanel(div(fa("syringe", fill = "#158cba"), 
-                     "Visualization of similarty matrix with reduced dimensions"),
+                     "Dimension Reduction and Visualization (DimReduct) Module"),
                  
 
                  fluidRow(
@@ -322,7 +322,7 @@ ui <-dashboardPage(
                     
                   )#fluidrow
         ),
-        tabPanel(div(fa("syringe", fill = "#158cba"), "Clustering"),
+        tabPanel(div(fa("syringe", fill = "#158cba"), "Clustering the functional similar genes (ClusFunSim) module"),
                  
                  fluidRow(
                    column(width=6,
