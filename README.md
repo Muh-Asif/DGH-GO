@@ -38,8 +38,8 @@ DGH-GO performs functional similarities, dimension reduction and clustering, cou
 <pre>
 Upload the gene and disease containing file:
 </pre>
+![11 (resized)](https://user-images.githubusercontent.com/39635420/227710943-c9a3d938-601f-4f57-8a05-df74e49423ae.png)
 
-<img width="468" alt="image" src="https://user-images.githubusercontent.com/39635420/191662925-74c5463d-f8f6-4c93-9164-78c2800cbe10.png">
 
 -	**Calculate genes functionality similarities by choosing semantic similarity measure**
 <pre>
