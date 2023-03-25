@@ -14,6 +14,7 @@ Allows the users to upload the genes
 
 
 Calculates the functional similarties between genes using GO structure
+
 - **Dimension reudction** 
 
 Provides the 2D viuslzation of simantic similarty matrix that allows biologist to look deep in their input. Currently, DGGH-GO support two dimension reduction methods, T-SNE and Principal Coordinate Analysis. 
@@ -33,31 +34,37 @@ DGH-GO performs functional similarities, dimension reduction and clustering, cou
 
 **Tutorial for using DGH-GO** 
 
--	Importing targeted genes file
+-	**Importing targeted genes file**
 
 <img width="468" alt="image" src="https://user-images.githubusercontent.com/39635420/191662925-74c5463d-f8f6-4c93-9164-78c2800cbe10.png">
 
--	Calculate genes functionality similarities by choosing semantic similarity measure
-<img width="465" alt="image" src="https://user-images.githubusercontent.com/39635420/191663463-65b30700-e009-4695-9ce7-5bfd2a219b4e.png">
+-	**Calculate genes functionality similarities by choosing semantic similarity measure**
+![Picture1 (resized)](https://user-images.githubusercontent.com/39635420/227709447-27168d3a-f10a-4f62-8ba7-59341d958632.png)
 
--	Apply and compare dimension reduction methods (PCoA, T-SNE, UMAP and PCA)
 
-<img width="465" alt="image" src="https://user-images.githubusercontent.com/39635420/191663584-3aded9bc-1a0c-4a32-a0c4-b76a8a51a325.png">
+![Picture2 (resized)](https://user-images.githubusercontent.com/39635420/227709475-a2753627-fd63-429e-9b61-aa16199cc479.png)
 
-<img width="465" alt="image" src="https://user-images.githubusercontent.com/39635420/191663618-1d518d0c-632a-44e8-962b-b1beea416f01.png">
 
-<img width="454" alt="image" src="https://user-images.githubusercontent.com/39635420/191663635-c5bcffeb-f72b-4ab7-824e-f0588840d365.png">
+-	**Apply and compare dimension reduction methods (PCoA, T-SNE, UMAP and PCA)**
+![Picture3 (resized)](https://user-images.githubusercontent.com/39635420/227709554-9a03587b-7b7c-455c-82a8-95a63f36087d.png)
 
-<img width="449" alt="image" src="https://user-images.githubusercontent.com/39635420/191663655-c8b0231f-d81e-40e5-ad0b-a47fea29993e.png">
 
--	Apply and compare clustering methods (K- means, PAM, Fuzzy and Agglomerative Hierarchical Clustering) 
+-	**Apply and compare clustering methods (K- means, PAM, Fuzzy and Agglomerative Hierarchical Clustering)** 
+<pre>
+Chossing the clusteerig methods and applying it to similarty matrix
+</pre>
+![Picture4 (resized)](https://user-images.githubusercontent.com/39635420/227709665-cb123fcb-c221-4394-af4b-d379ecf2d8bf.png)
+<pre>
+Chossing the clusteerig methods and applying it to similarty matrix
+</pre>
 
-<img width="459" alt="image" src="https://user-images.githubusercontent.com/39635420/191663731-bb91a1fc-ebb0-48df-9afd-cdce83011431.png">
-<img width="463" alt="image" src="https://user-images.githubusercontent.com/39635420/191663757-83c2dcf8-e45a-46c1-915c-dc8c6af1a068.png">
-<img width="459" alt="image" src="https://user-images.githubusercontent.com/39635420/191663782-5295750b-847c-40ab-8735-9ffc9f13fce9.png">
-<img width="451" alt="image" src="https://user-images.githubusercontent.com/39635420/191663823-bb50b9b9-e9b6-4669-9e94-cc54b609bd14.png">
-<img width="457" alt="image" src="https://user-images.githubusercontent.com/39635420/191663839-952f2fcd-fc66-4d78-a38e-5d09217efc35.png">
-<img width="455" alt="image" src="https://user-images.githubusercontent.com/39635420/191663946-3261546a-9c81-4ee6-9c7b-fed726aad66e.png">
+
+![Picture7 (resized)](https://user-images.githubusercontent.com/39635420/227709682-69a6e008-0704-4585-bf6f-5079ffe907db.png)
+&nbsp;
+![Picture6 (resized)](https://user-images.githubusercontent.com/39635420/227709712-58734f91-1e5f-4ba0-b33b-e7ff90fc0093.png)
+&nbsp; &nbsp;
+![Picture5 (resized)](https://user-images.githubusercontent.com/39635420/227709723-72cf71fa-7359-4ff2-9063-fcad5dc8c415.png)
+
 
 
 
