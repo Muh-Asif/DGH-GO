@@ -35,35 +35,59 @@ DGH-GO performs functional similarities, dimension reduction and clustering, cou
 **Tutorial for using DGH-GO** 
 
 -	**Importing targeted genes file**
+<pre>
+Upload the gene and disease containing file:
+</pre>
 
 <img width="468" alt="image" src="https://user-images.githubusercontent.com/39635420/191662925-74c5463d-f8f6-4c93-9164-78c2800cbe10.png">
 
 -	**Calculate genes functionality similarities by choosing semantic similarity measure**
+<pre>
+Choose the semantic similarty matrix:
+</pre>
+
+
 ![Picture1 (resized)](https://user-images.githubusercontent.com/39635420/227709447-27168d3a-f10a-4f62-8ba7-59341d958632.png)
+<pre>
+Genes functional similarty matrix:
+</pre>
 
 
 ![Picture2 (resized)](https://user-images.githubusercontent.com/39635420/227709475-a2753627-fd63-429e-9b61-aa16199cc479.png)
 
 
 -	**Apply and compare dimension reduction methods (PCoA, T-SNE, UMAP and PCA)**
+<pre>
+Output of different dimension reduction methods:
+</pre>
+
+
 ![Picture3 (resized)](https://user-images.githubusercontent.com/39635420/227709554-9a03587b-7b7c-455c-82a8-95a63f36087d.png)
 
 
 -	**Apply and compare clustering methods (K- means, PAM, Fuzzy and Agglomerative Hierarchical Clustering)** 
 <pre>
-Chossing the clusteerig methods and applying it to similarty matrix
+Chossing the clusteerig methods and applying it to similarty matrix:
 </pre>
 ![Picture4 (resized)](https://user-images.githubusercontent.com/39635420/227709665-cb123fcb-c221-4394-af4b-d379ecf2d8bf.png)
 <pre>
-Chossing the clusteerig methods and applying it to similarty matrix
+Determining the optimal number of clusters:
 </pre>
 
 
 ![Picture7 (resized)](https://user-images.githubusercontent.com/39635420/227709682-69a6e008-0704-4585-bf6f-5079ffe907db.png)
-&nbsp;
-![Picture6 (resized)](https://user-images.githubusercontent.com/39635420/227709712-58734f91-1e5f-4ba0-b33b-e7ff90fc0093.png)
-&nbsp; &nbsp;
+
+<pre>
+Quantifying the clustering validation: 
+</pre>
+
 ![Picture5 (resized)](https://user-images.githubusercontent.com/39635420/227709723-72cf71fa-7359-4ff2-9063-fcad5dc8c415.png)
+
+<pre>
+Genes with assigned clusters: 
+</pre>
+
+![Picture6 (resized)](https://user-images.githubusercontent.com/39635420/227709712-58734f91-1e5f-4ba0-b33b-e7ff90fc0093.png)
 
 
 
