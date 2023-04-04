@@ -1,4 +1,17 @@
 # DGH-GO
+## Contact 
+<pre>
+-> Dr. Muhammad Asif
+asif.muhammad@gcuf.edu.pk
+Biomedical Data Science Lab, Department of Bioinformatics and Biotechnology, Government
+College University Faisalabad, Faisalabad 38000, Pakistan,
+
+-> Dr. Francisco M. Couto
+fjcouto@edu.ulisboa.pt 
+Departamento de Informática, Faculdade de Ciências, Universidade de Lisboa, Portugal.
+</pre>
+
+
 Dissecting the Genetic Heterogeneity of complex diseases using Gene Ontology (GO), an interactive and user friendly web application.
 
 Neurodevelopmental disorders (NDDs) such as Autism Spectrum Disorder (ASD), Schizophrenia and Intellectual Disability are phenotypically heterogeneous and difficult to diagnose at early-age. The genetic heterogeneity of NDDs matches to their clinical-variability. The different NDDs share biological mechanisms that further complex the patient's stratification, thus, limiting the applications of personalized medicine for NDDs.
